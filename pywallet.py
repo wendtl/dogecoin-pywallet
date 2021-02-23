@@ -1,17 +1,13 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-pywversion="2.1.7"
-never_update=False
-
 
 #
 # wendtl's pywallet.py (https://github.com/wendtl/dogecoin-pywallet)
 # forked from JackJacks's pywallet.py (https://github.com/jackjack-jj/pywallet)
 #
 
-
+pywversion="2.1.7"
 beta_version =  ('a' in pywversion.split('-')[0]) or ('b' in pywversion.split('-')[0])
-
 missing_dep = []
 
 try:
@@ -27,11 +23,12 @@ pyw_filename = os.path.basename(__file__)
 pyw_path = os.path.dirname(os.path.realpath(__file__))
 
 try:
-	for i in os.listdir('/usr/lib/python2.5/site-packages'):
+	for i in os.listdir('/usr/lib/python2.7/site-packages'):
 		if 'Twisted' in i:
-			sys.path.append('/usr/lib/python2.5/site-packages/'+i)
+			sys.path.append('/usr/lib/python2.7/site-packages/'+i)
 except:
-	''
+	missing_dep.append('Twisted')
+	print("failed to import 'Twisted' library")
 
 try:
 	import json
@@ -39,16 +36,15 @@ except:
 	try:
 		import simplejson as json
 	except:
-		print("Json or simplejson package is needed")
+		missing_dep.append('simplejson')
+		print("failed to import 'json' or 'simplejson' packages")
 
 import logging
 import struct
-import StringIO
 import traceback
 import socket
 import types
 import string
-import exceptions
 import hashlib
 import random
 import urllib
@@ -77,7 +73,9 @@ private_hex_keys = []
 passphrase = ""
 global_merging_message = ["",""]
 
+# TODO: this url is for bitcoin addresses - gotta find a way to support dogecoin addresses
 balance_site = 'http://jackjack.alwaysdata.net/balance/index.php?address'
+
 aversions = {};
 for i in range(256):
 	aversions[i] = "version %d" % i;
@@ -4330,7 +4328,7 @@ if 'twisted' not in missing_dep:
 
 		 def render_GET(self, request):
 			 global addrtype
-			 try:
+			try:
 					wdir=request.args['dir'][0]
 					wname=request.args['name'][0]
 					txk=request.args['txk'][0]
@@ -4928,23 +4926,22 @@ if __name__ == '__main__':
 
 	if 'twisted' not in missing_dep:
 		VIEWS = {
-			 'DumpWallet': WIDumpWallet(),
-			 'MergeWallets': WIMergeWallets(),
-			 'Import': WIImport(),
-			 'ImportTx': WIImportTx(),
-			 'DumpTx': WIDumpTx(),
-			 'Info': WIInfo(),
-			 'Delete': WIDelete(),
-			 'Balance': WIBalance(),
-			 'ChangePP': WIChangePP(),
-			 'Others': WIOthers(),
-			 'LoadBalances': WICTTest(),
-			 'CTTest': WICTTest(),
-			 'ListTransactions': WICTListTx(),
-			 'CreateTransaction': WICT(),
-			 'CT': WICT(),
-			 'quit': WIQuit()
-
+			'DumpWallet': WIDumpWallet(),
+			'MergeWallets': WIMergeWallets(),
+			'Import': WIImport(),
+			'ImportTx': WIImportTx(),
+			'DumpTx': WIDumpTx(),
+			'Info': WIInfo(),
+			'Delete': WIDelete(),
+			'Balance': WIBalance(),
+			'ChangePP': WIChangePP(),
+			'Others': WIOthers(),
+			'LoadBalances': WICTTest(),
+			'CTTest': WICTTest(),
+			'ListTransactions': WICTListTx(),
+			'CreateTransaction': WICT(),
+			'CT': WICT(),
+			'quit': WIQuit()
 		}
 
 	if options.dcv is not None:
@@ -5043,8 +5040,4 @@ if __name__ == '__main__':
 				print("Bad private key")
 
 			db.close()
-
-
-
-
 
