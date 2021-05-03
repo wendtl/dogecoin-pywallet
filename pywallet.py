@@ -9,8 +9,11 @@ never_update=False
 # forked from Joric's pywallet.py
 #
 
+import utils
 
-
+if __name__ == '__main__' and __package__ is None:
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
 beta_version =  ('a' in pywversion.split('-')[0]) or ('b' in pywversion.split('-')[0])
 
@@ -72,7 +75,8 @@ import os.path
 import platform
 
 max_version = 81000
-addrtype = 0
+#addrtype = 0
+addrtype = 30 # Dogecoin address type
 json_db = {}
 private_keys = []
 private_hex_keys = []
@@ -83,6 +87,7 @@ balance_site = 'http://jackjack.alwaysdata.net/balance/index.php?address'
 aversions = {};
 for i in range(256):
 	aversions[i] = "version %d" % i;
+
 aversions[30] = 'Dogecoin';
 aversions[0] = 'Bitcoin';
 aversions[48] = 'Litecoin';
@@ -1535,6 +1540,7 @@ def recov(device, passes, size=102400, inc=10240, outputdir='.'):
 	cpt=0
 	mki=1
 	tzero=time.time()
+
 	if len(passes)==0:
 		if len(ckeys)>0:
 			print "Can't decrypt them as you didn't provide any passphrase."
@@ -1552,18 +1558,20 @@ def recov(device, passes, size=102400, inc=10240, outputdir='.'):
 				if res == 0:
 					print "Unsupported derivation method"
 					sys.exit(1)
+
 				masterkey = crypter.Decrypt(mk.encrypted_key)
 				crypter.SetKey(masterkey)
+
 				for ck in list_of_possible_keys:
 					if cpt%10==9 and failures_in_a_row==0:
 						sys.stdout.write('.')
 						sys.stdout.flush()
 					if failures_in_a_row>5:
 						break
+
 					crypter.SetIV(Hash(ck.public_key))
 					secret = crypter.Decrypt(ck.encrypted_pk)
 					compressed = ck.public_key[0] != '\04'
-
 
 					pkey = EC_KEY(int('0x' + secret.encode('hex'), 16))
 					if ck.public_key != GetPubKey(pkey, compressed):
@@ -1573,6 +1581,7 @@ def recov(device, passes, size=102400, inc=10240, outputdir='.'):
 						ck.mkey=mk
 						ck.privkey=secret
 					cpt+=1
+
 			mki+=1
 		print "\n"
 		tone=time.time()
@@ -4741,12 +4750,13 @@ def retrieve_last_pywallet_md5():
 from optparse import OptionParser
 
 if __name__ == '__main__':
-
-
 	parser = OptionParser(usage="%prog [options]", version="%prog 1.1")
 
 	parser.add_option("--passphrase", dest="passphrase",
-		help="passphrase for the encrypted wallet")
+		help="passphrase for the new encrypted wallet")
+
+        parser.add_option("--password_file", dest="password_file",
+                          help="list of passwords to try during recovery attempts")
 
 	parser.add_option("--dumpwallet", dest="dump", action="store_true",
 		help="dump wallet in json format")
@@ -4859,23 +4869,25 @@ if __name__ == '__main__':
 		size = read_device_size(options.recov_size)
 
 		passphraseRecov=''
-		while passphraseRecov=='':
-			passphraseRecov=raw_input("Enter the passphrase for the wallet that will contain all the recovered keys: ")
-		passphrase=passphraseRecov
+		#while passphraseRecov=='':
+		#	passphraseRecov=raw_input("Enter the passphrase for the wallet that will contain all the recovered keys: ")
+		#passphrase=passphraseRecov
 
-		passes=[]
-		p=' '
-		print '\nEnter the possible passphrases used in your deleted wallets.'
-		print "Don't forget that more passphrases = more time to test the possibilities."
-		print 'Write one passphrase per line and end with an empty line.'
-		while p!='':
-			p=raw_input("Possible passphrase: ")
-			if p!='':
-				passes.append(p)
+		passes=utils.read_password_file(options.password_file)
+                print 'Found password file containing %d passwords. Will attempt to decrypt using these passwords.'%len(passes)
+		#p=' '
+		#print '\nEnter the possible passphrases used in your deleted wallets.'
+		#print "Don't forget that more passphrases = more time to test the possibilities."
+		#print 'Write one passphrase per line and end with an empty line.'
+
+		#while p!='':
+		#	p=raw_input("Possible passphrase: ")
+		#	if p!='':
+		#		passes.append(p)
 
 		print "\nStarting recovery."
-		recoveredKeys=recov(device, passes, size, 10240, options.recov_outputdir)
-		recoveredKeys=list(set(recoveredKeys))
+		recoveredKeys = recov(device, passes, size, 10240, options.recov_outputdir)
+		recoveredKeys = list(set(recoveredKeys))
 #		print recoveredKeys[0:5]
 
 
